@@ -26,6 +26,46 @@ class ClearSession(Resource):
         session['user_id'] = None
 
         return {}, 204
+    
+class Login(Resource):
+
+    #def get(self):
+        #pass
+
+# This will log in a user who already exists in the database 
+# and store their id in the session to keep them logged in
+    def post(self):
+        user = User.query.filter(
+            User.username == request.get_json()['username']
+        ).first()
+
+        session['user_id'] = user.id
+        return user.to_dict()
+
+api.add_resource(Login, '/login')
+
+# Now using the session hash, we allow the user to stay logged in even when the page reloads
+# without this part the user will be logged out when the page refreshes
+# because the login route only saves the id to session while the frontend saves it to state and when the page refreshes there is a change in state
+class CheckSession(Resource):
+
+    def get(self):
+        user = User.query.filter(User.id == session.get('user_id')).first()
+        if user:
+            return user.to_dict()
+        else:
+            return {}, 401
+
+api.add_resource(CheckSession, '/check_session')
+
+# Logout is very simple because all it does is set the session to None
+class Logout(Resource):
+
+    def delete(self): # just add this line!
+        session['user_id'] = None
+        return {'message': '204: No Content'}, 204
+
+api.add_resource(Logout, '/logout')
 
 class IndexArticle(Resource):
     
